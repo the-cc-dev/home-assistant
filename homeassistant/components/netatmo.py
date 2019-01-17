@@ -16,7 +16,7 @@ from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
 from homeassistant.util import Throttle
 
-REQUIREMENTS = ['pyatmo==1.0.0']
+REQUIREMENTS = ['pyatmo==1.4']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def setup(hass, config):
             config[DOMAIN][CONF_USERNAME], config[DOMAIN][CONF_PASSWORD],
             'read_station read_camera access_camera '
             'read_thermostat write_thermostat '
-            'read_presence access_presence')
+            'read_presence access_presence read_homecoach')
     except HTTPError:
         _LOGGER.error("Unable to connect to Netatmo API")
         return False
@@ -64,7 +64,7 @@ def setup(hass, config):
     return True
 
 
-class CameraData(object):
+class CameraData:
     """Get the latest data from Netatmo."""
 
     def __init__(self, auth, home=None):
@@ -101,10 +101,10 @@ class CameraData(object):
         return self.module_names
 
     def get_camera_type(self, camera=None, home=None, cid=None):
-        """Return all module available on the API as a list."""
-        for camera_name in self.camera_names:
-            self.camera_type = self.camera_data.cameraType(camera_name)
-            return self.camera_type
+        """Return camera type for a camera, cid has preference over camera."""
+        self.camera_type = self.camera_data.cameraType(camera=camera,
+                                                       home=home, cid=cid)
+        return self.camera_type
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):

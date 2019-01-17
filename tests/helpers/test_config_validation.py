@@ -258,11 +258,12 @@ def test_icon():
     """Test icon validation."""
     schema = vol.Schema(cv.icon)
 
-    for value in (False, 'work', 'icon:work'):
+    for value in (False, 'work'):
         with pytest.raises(vol.MultipleInvalid):
             schema(value)
 
     schema('mdi:work')
+    schema('custom:prefix')
 
 
 def test_time_period():
@@ -356,8 +357,14 @@ def test_string():
     """Test string validation."""
     schema = vol.Schema(cv.string)
 
-    with pytest.raises(vol.MultipleInvalid):
+    with pytest.raises(vol.Invalid):
         schema(None)
+
+    with pytest.raises(vol.Invalid):
+        schema([])
+
+    with pytest.raises(vol.Invalid):
+        schema({})
 
     for value in (True, 1, 'hello'):
         schema(value)
@@ -523,21 +530,6 @@ def test_has_at_least_one_key():
         schema(value)
 
 
-def test_has_at_least_one_key_value():
-    """Test has_at_least_one_key_value validator."""
-    schema = vol.Schema(cv.has_at_least_one_key_value(('drink', 'beer'),
-                                                      ('drink', 'soda'),
-                                                      ('food', 'maultaschen')))
-
-    for value in (None, [], {}, {'wine': None}, {'drink': 'water'}):
-        with pytest.raises(vol.MultipleInvalid):
-            schema(value)
-
-    for value in ({'drink': 'beer'}, {'food': 'maultaschen'},
-                  {'drink': 'soda', 'food': 'maultaschen'}):
-        schema(value)
-
-
 def test_enum():
     """Test enum validator."""
     class TestEnum(enum.Enum):
@@ -593,3 +585,16 @@ def test_is_regex():
 
     valid_re = ".*"
     schema(valid_re)
+
+
+def test_comp_entity_ids():
+    """Test config validation for component entity IDs."""
+    schema = vol.Schema(cv.comp_entity_ids)
+
+    for valid in ('ALL', 'all', 'AlL', 'light.kitchen', ['light.kitchen'],
+                  ['light.kitchen', 'light.ceiling'], []):
+        schema(valid)
+
+    for invalid in (['light.kitchen', 'not-entity-id'], '*', ''):
+        with pytest.raises(vol.Invalid):
+            schema(invalid)
